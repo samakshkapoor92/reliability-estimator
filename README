@@ -1,0 +1,170 @@
+# Copyright, disclaimer and other stuff goes here#
+
+1 - Introduction
+--------------------------------------------------------------------------
+	This program uses the Monte Carlo method to estimate the MTTF of
+a SoC based on the chip characteristics (floorplanning, voltage, temp).
+
+2 - Compiling
+--------------------------------------------------------------------------
+	Under Linux, simply unzip/untar the source code in the chosen
+destination folder and run make. Under Windows, use the compiler of
+your choice to compile the files inside the WN directory (Linux users
+may choose to delete this folder). For convenience, a pre-compiled
+binary for Windows is provided.
+
+3 - Usage
+--------------------------------------------------------------------------
+	REST takes at least two inputs to calculate the SoC reliability:
+The floorplan (it is necessary to obtain area information) and the
+temperature file. The command line should look like this:
+
+	./REST <areafile/floorplan> <temperaturefile> [options]
+
+	Provided is a floorplan of an Alpha EV6 processor and some
+example temperatures for reference. Additionally, the results from
+running the example files with default options are provided.
+
+3.1 - Inputs and options
+------------------------
+3.1.1 - <areafile/floorplan>
+----------------------------
+	The area file can have the same exact format as the one used
+in HotSpot, which is: 
+
+	<unit-name>\t<width>\t<height>\t<left-x>\t<bottom-y>
+
+	Also, as in HotSpot, lines that begin with a # are ignored. It
+is important to notice that REST is compatible with this floorplan
+format, but not all the information is necessary. REST is going to
+simply ignore the left-x and bottom-y information, and as such, the
+line can be made as:
+
+	<unit-name>\t<width>\t<height>
+
+	Additionally, space(s) may be used instead of '\t'. The example
+files ev6.flp/ev6min.flp are read as being the same by REST and provide
+a good start. Note the ev6min.flp is an example of a "worst-case" file.
+
+	Units are assumed to be in meters to maintain compatibility
+with HotSpot floorplan files.
+
+3.1.2 - <temperaturefile>
+----------------------------
+	The temperature file should have the format of the console
+output of HotSpot, being:
+
+	<unit-name>\t<temperature>
+
+	The temperature should be in Kelvin. One can either copy and
+paste the console output of HotSpot or slightly modify the code to
+output to a file.
+
+	It is worth noting that tiles not assigned a temperature
+will assume default temperature (according to the options, see # ).
+Verbose will issue a warning about this. It will also happend if the
+temperature on file is 0 Kelvin or less.
+
+	Additionally, if blocks in the floorplan have the same name, 
+they will be assigned the same temperature (i.e. homogeneous cores).
+
+3.1.3 - [options]
+-----------------
+3.1.3.1 - [-i N, --iterations N]
+--------------------------------
+	Sets the number of iterations of the Monte Carlo algorithm to
+run. The default number is 100000, and any long int value is accepted.
+
+3.1.3.2 - [-b B, --beta B]
+--------------------------
+	Sets the shape parameter beta of the Weibull distribution. That
+value has to be known beforehand, as (to the best of our knowledge)
+there is no way to calculate it only with temperature and MTTF 
+information.
+
+	The Weibull distribution used in this program has the CDF:
+
+	F(x) = 1 - exp(-(x/alpha)^beta)
+
+	Which means beta is the shape parameter and alpha is the
+scale parameter. There are various definitions for the Weibull
+distribution, and some actually have other meanings for alpha and
+beta, so check to see if the CDFs match.
+
+3.1.3.3 - [-l L, --lifetime L]
+------------------------------
+
+	This is the expected MTTF for a 1mmx1mm block using only
+one failure model. Basically, it would be the informed MTTF after
+running the algorithm if only one failure model is enabled
+	It was implemented so that the numbers do not go out of
+bounds and are easier to interpret. It is nothing more than a scale
+factor. If your informed numbers are too low or too high and you
+feel you are losing precision, just adjust this factor accordingly.
+	Additionally, it is a good way of verifying that the MC
+algorithm is working. Just run REST using the std.flp and std.ptrace
+with the default temperature of 300K. The L parameter and the 
+informed MTTF must match within reasonable bounds (which will depend
+on the iterations parameter)
+
+3.1.3.4 - [-t T, --temperature T]
+---------------------------------
+
+	The default temperature to be used when there is no other
+reference. Basically, this parameter will be used in the failure
+model calibration (see previous section about the L parameter) and
+when blocks do not have a informed temperature.
+
+3.1.3.5 - [-f F, --failures F]
+------------------------------
+
+	This will enable specific failure models to be considered
+in the final MTTF computation. You can choose any combination of
+models, using the following table:
+
+	1 - NBTI
+	2 - TDDB
+	4 - EM
+
+	You will be informed of which failure models are being
+used. To use the failure models, you just need to sum the
+numbers of the ones you want to use. For instance, if you want to use
+NBTI and EM, you should sum up 1 + 4 = 5. And use the F parameter
+as 5.
+
+
+3.1.3.6 - [-o <file>]
+---------------------
+
+	Specifies an output file. This is useful for additional
+information not provided by the prompt, such as percentage of failures
+by block. It also saves the MTTF to a file, should archiving be needed.
+
+	For more information, please refer to the provided example
+output file example.output
+
+3.1.3.7 - [-v, --verbose]
+-------------------------
+	
+	This will activate verbose mode, which is particularly useful
+if you are trying to debug the code or gather information which might
+be valuable in long-time simluations (such as progress). 
+
+3.1.3.8 - [-V V, --voltage V]
+-----------------------------
+
+	The vdd votlage used by the chip. It will not matter if you
+do not use the TDDB failure model.
+
+3.1.3.9 - [-d <file>]
+---------------------
+
+	Dump file to save the CSV data obtained from the MC method.
+Sometimes, it might be useful to have all of the Times-to-failure
+of the SoC to generate probability graphs or just use the data
+to do something. This command will generate a CSV file with the
+TTFs of the SoC that generated the final MTTF. This file will
+contain as many CSV values as there are iterations.
+	(For example: If you run 10 iterations, there will be 10
+CSV values).
+
