@@ -1,0 +1,7 @@
+# Floorplan of a standard 1mmx1mm block.
+# For calibration/verification purposes.
+
+std_block0 	0.001 	0.001
+std_block1 	0.001 	0.001
+std_block2 	0.001 	0.001
+std_block3 	0.001 	0.001
