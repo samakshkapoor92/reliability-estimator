@@ -1,0 +1,1 @@
+Software that uses Monte Carlo method for calculating MTTF of CMPs using various failure mechanisms such as Negative Bias Temperature Instability, Time-Dependent Dielectric Breakdown and Electromigration.
